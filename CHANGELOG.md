@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Add `serve --read-only`: a cache-only MCP server for a second local client on the same database. It hides and rejects cloud tools (`get_connection_status`, `sync_data`, `cancel_sync`, `get_profile`), creates no cloud adapter (so it never uses or rotates the stored passToken), skips the per-database MCP lock and does not mark the owning server's live jobs as interrupted. Covered by synthetic tests.
+
 - Correct body measurements: convert upstream muscle percentage to `muscle_mass_kg` using the same record's weight. Missing, zero-default or invalid percentages remain unavailable without discarding valid weight readings. Reject non-finite weights. Existing cached rows require an explicit date-range body-measurement re-sync after installing this fix; exporting alone does not repair them. Covered by synthetic conversion and repeated-upsert tests (Issue #20).
 
 - Parse per-second workout detail for indoor running / treadmill (`proto_type` 3) and free training / strength (`proto_type` 8, 12, 16). Previously these workouts were skipped before download although the cloud holds their detail files. Channel tables follow kevinkwee/Mi-Fitness-Sync (MIT). Indoor running: dataValid lengths for versions 1/2 as upstream plus version 6 (4 bytes), verified against a real treadmill blob whose length matched the header plus 12-byte records exactly; other versions are skipped, not guessed. Free training: four-dimension layout from version 3 (dataValid as upstream); the one-dimension layout of versions 1/2 is not implemented and is skipped. Synthetic regression tests only.

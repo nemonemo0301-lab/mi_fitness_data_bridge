@@ -56,6 +56,10 @@ sync_tasks: dict[str, dict[str, Any]] = {}
 sync_active = False
 active_sync_id: str | None = None
 MAX_SYNC_TASKS = 100
+# Read-only serve: cache queries only. No Xiaomi requests, no credential rotation and no
+# database lock, so it can run beside the normal server that owns syncing.
+read_only_serve = False
+CLOUD_TOOLS = frozenset({"get_connection_status", "sync_data", "cancel_sync", "get_profile"})
 
 
 def _prune_sync_tasks() -> None:
@@ -1071,6 +1075,8 @@ async def list_tools() -> list[Tool]:
             " Returns data.pagination {limit, offset, has_more, next_offset}; next_offset is null "
             "at the end. Keep filters unchanged and avoid syncing between pages."
         )
+    if read_only_serve:
+        tools = [tool for tool in tools if tool.name not in CLOUD_TOOLS]
     return tools
 
 
@@ -1144,6 +1150,8 @@ TOOL_ALIASES = {
 @app.call_tool()
 async def _dispatch_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
     canonical = TOOL_ALIASES.get(name, name)
+    if read_only_serve and canonical in CLOUD_TOOLS:
+        raise ValueError(f"Tool unavailable in read-only mode: {name}")
     tool = next((tool for tool in await list_tools() if tool.name == canonical), None)
     if tool is None:
         raise ValueError(f"Unknown tool: {name}")
@@ -1158,7 +1166,13 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
         page_arguments = arguments.copy()
         if name in SQL_PAGED_TOOLS:
             arguments = {**arguments, "limit": arguments.get("limit", 5000) + 1}
-        if name == "get_connection_status":
+        if read_only_serve and name in CLOUD_TOOLS:
+            result = {
+                "status": "error",
+                "error": "Read-only server: sync and cloud tools are disabled; "
+                "sync from the main server or the CLI.",
+            }
+        elif name == "get_connection_status":
             result = await _handle_get_connection_status()
         elif name == "sync_data":
             result = await _handle_sync_data(arguments)
@@ -1667,13 +1681,22 @@ async def _handle_get_data_coverage(arguments: dict) -> dict:
     return QueryResponse(status="ok", source="cache", data={"coverage": coverage}).model_dump()
 
 
-async def main(db_path=None):
-    global config, db, adapter, sync_service, query_service, sync_history
+async def main(db_path=None, read_only_mode=False):
+    global config, db, adapter, sync_service, query_service, sync_history, read_only_serve
+    read_only_serve = read_only_mode
     config = load_config()
     if db_path is not None:
         # Explicit CLI/--env override: serve strictly uses the given database.
         config.database_path = Path(db_path)
     db = Database(config.database_path)
+    if read_only_serve:
+        # Only the account id is needed to scope queries; the passToken is never used here.
+        user_id, _ = load_mi_fitness_token() if config.mode == "mi_fitness_cloud" else (None, None)
+        query_service = QueryService(db, user_id or "unknown")
+        sync_history = SyncHistory(db, query_service.user_id)
+        async with stdio_server() as (read_stream, write_stream):
+            await app.run(read_stream, write_stream, app.create_initialization_options())
+        return
     if config.mode == "mi_fitness_cloud":
         user_id, pass_token = load_mi_fitness_token()
         if user_id and pass_token:
