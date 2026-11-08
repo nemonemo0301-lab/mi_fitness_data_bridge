@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Add `serve --read-only`: a cache-only MCP server for a second local client on the same database. It hides and rejects cloud tools (`get_connection_status`, `sync_data`, `cancel_sync`, `get_profile`), creates no cloud adapter (so it never uses or rotates the stored passToken), skips the per-database MCP lock and does not mark the owning server's live jobs as interrupted. Covered by synthetic tests.
+
 - Use ASCII status markers in setup, doctor and sync so strict GBK terminals can display diagnostics without an emoji encoding exception. Synthetic GBK-stream regression checks cover successful, failed and partial operations; this does not establish a fix for upstream login failures.
 
 - Correct body measurements: convert upstream muscle percentage to `muscle_mass_kg` using the same record's weight. Missing, zero-default or invalid percentages remain unavailable without discarding valid weight readings. Reject non-finite weights. Existing cached rows require an explicit date-range body-measurement re-sync after installing this fix; exporting alone does not repair them. Covered by synthetic conversion and repeated-upsert tests (Issue #20).

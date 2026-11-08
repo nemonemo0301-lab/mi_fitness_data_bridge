@@ -276,6 +276,11 @@ def main():
     subparsers = parser.add_subparsers(dest="command", help="可用命令")
     serve_parser = subparsers.add_parser("serve", help="运行 MCP Server")
     serve_parser.add_argument("--db", help=db_help)
+    serve_parser.add_argument(
+        "--read-only",
+        action="store_true",
+        help="只读：仅查询本地缓存，不连接小米、不同步、不占用数据库锁（可与常规 serve 并行）",
+    )
 
     setup_parser = subparsers.add_parser("setup", help="配置服务")
     setup_parser.add_argument("--mode", choices=["mi_fitness_cloud"], help="配置模式")
@@ -318,7 +323,12 @@ def main():
 
     args = parser.parse_args()
     if args.command == "serve" or args.command is None:
-        asyncio.run(server_main(db_path=resolve_database_path(getattr(args, "db", None))))
+        asyncio.run(
+            server_main(
+                db_path=resolve_database_path(getattr(args, "db", None)),
+                read_only_mode=getattr(args, "read_only", False),
+            )
+        )
     elif args.command == "setup":
         cmd_setup(args)
     elif args.command == "doctor":
