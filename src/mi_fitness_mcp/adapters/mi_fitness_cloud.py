@@ -35,7 +35,7 @@ from mi_fitness_mcp.adapters.fds import (
     parse_gps_record,
     parse_sport_record,
 )
-from mi_fitness_mcp.auth import save_mi_fitness_token
+from mi_fitness_mcp.auth import load_mi_fitness_token, save_mi_fitness_token
 from mi_fitness_mcp.models import (
     AbnormalHeartBeatEvent,
     BodyMeasurement,
@@ -177,8 +177,19 @@ class MiFitnessCloudAdapter(DataAdapter):
         self.request_retries = 3
         self.http_timeout = 20.0
 
+    def _adopt_stored_token(self) -> None:
+        """Pick up a passToken rotated by another local process (CLI or second server).
+
+        Each login rotates the token and invalidates the old one, so a long-running
+        server must not keep re-using the token it loaded at startup.
+        """
+        stored_user_id, stored_token = load_mi_fitness_token()
+        if stored_token and stored_user_id == self.user_id and stored_token != self.pass_token:
+            self.pass_token = stored_token
+
     async def connect(self) -> bool:
         async with self._connect_lock:
+            self._adopt_stored_token()
             if not self.user_id or not self.pass_token:
                 self.last_error = "Missing Mi Fitness credentials"
                 self._connected = False
@@ -365,6 +376,7 @@ class MiFitnessCloudAdapter(DataAdapter):
                     self._connected = False
                     if attempt < self.request_retries - 1 and self.user_id and self.pass_token:
                         try:
+                            self._adopt_stored_token()
                             await self._login_with_token(self.user_id, self.pass_token)
                             self._connected = True
                             retryable = True

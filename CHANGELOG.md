@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Reload the stored passToken before connecting and before a retry re-login. Each login rotates the passToken and invalidates the previous one, so a long-running MCP server kept the token it loaded at startup and failed after another local process (CLI `sync`, another server) logged in. The adapter now adopts the newest stored token when it belongs to the same account. Tests use synthetic values only and never read the real keyring.
+
 - Use ASCII status markers in setup, doctor and sync so strict GBK terminals can display diagnostics without an emoji encoding exception. Synthetic GBK-stream regression checks cover successful, failed and partial operations; this does not establish a fix for upstream login failures.
 
 - Correct body measurements: convert upstream muscle percentage to `muscle_mass_kg` using the same record's weight. Missing, zero-default or invalid percentages remain unavailable without discarding valid weight readings. Reject non-finite weights. Existing cached rows require an explicit date-range body-measurement re-sync after installing this fix; exporting alone does not repair them. Covered by synthetic conversion and repeated-upsert tests (Issue #20).
