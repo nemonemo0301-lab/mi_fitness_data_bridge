@@ -69,7 +69,8 @@ def test_iter_heart_rate_skips_records_without_valid_time(caplog):
     adapter._fetch_key = fake_fetch_key
 
     async def collect():
-        return [s async for s in adapter.iter_heart_rate("2026-08-01", "2026-08-31")]
+        # heart_rate is fetched one day per request; a single day keeps one fake page.
+        return [s async for s in adapter.iter_heart_rate("2026-08-01", "2026-08-01")]
 
     with caplog.at_level(logging.WARNING):
         samples = asyncio.run(collect())

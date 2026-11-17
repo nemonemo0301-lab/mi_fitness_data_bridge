@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Fix heart-rate and stress data silently missing after the first day of a multi-day sync. With 1-minute heart-rate measurement, a multi-day request returned only the oldest records with no pagination signal, while a single-day request returned the full day. `heart_rate` and `stress` are now fetched one calendar day per request; other data types are unchanged. Covered by synthetic tests with mocked cloud responses.
+
 - Use ASCII status markers in setup, doctor and sync so strict GBK terminals can display diagnostics without an emoji encoding exception. Synthetic GBK-stream regression checks cover successful, failed and partial operations; this does not establish a fix for upstream login failures.
 
 - Correct body measurements: convert upstream muscle percentage to `muscle_mass_kg` using the same record's weight. Missing, zero-default or invalid percentages remain unavailable without discarding valid weight readings. Reject non-finite weights. Existing cached rows require an explicit date-range body-measurement re-sync after installing this fix; exporting alone does not repair them. Covered by synthetic conversion and repeated-upsert tests (Issue #20).
