@@ -10,7 +10,7 @@ import random
 import struct
 from collections import defaultdict
 from collections.abc import AsyncIterator
-from datetime import UTC, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta, timezone
 from typing import Any
 from urllib.parse import urlencode, urlparse
 
@@ -405,6 +405,21 @@ class MiFitnessCloudAdapter(DataAdapter):
         start_dt = datetime.fromisoformat(start_date).replace(tzinfo=tz)
         end_dt = datetime.fromisoformat(end_date + "T23:59:59").replace(tzinfo=tz)
         return int(start_dt.timestamp()), int(end_dt.timestamp())
+
+    async def _fetch_key_per_day(self, key: str, start_date: str, end_date: str) -> list[dict]:
+        """Fetch a high-frequency key one calendar day per request.
+
+        With 1-minute heart-rate measurement a day holds ~1400 records. A multi-day
+        request was observed to come back incomplete without any pagination signal
+        (only the oldest records), while a single-day request returned the full day.
+        """
+        day = date.fromisoformat(start_date)
+        last = date.fromisoformat(end_date)
+        items: list[dict] = []
+        while day <= last:
+            items.extend(await self._fetch_key(key, day.isoformat(), day.isoformat()))
+            day += timedelta(days=1)
+        return items
 
     async def _fetch_key(
         self, key: str, start_date: str, end_date: str, region: str | None = None
@@ -1330,7 +1345,7 @@ class MiFitnessCloudAdapter(DataAdapter):
             return
             yield
 
-        records = await self._fetch_key("heart_rate", start_date, end_date)
+        records = await self._fetch_key_per_day("heart_rate", start_date, end_date)
         skipped = 0
         for item in records:
             try:
@@ -1447,7 +1462,7 @@ class MiFitnessCloudAdapter(DataAdapter):
             return
             yield
 
-        records = await self._fetch_key("stress", start_date, end_date)
+        records = await self._fetch_key_per_day("stress", start_date, end_date)
         skipped = 0
         for item in records:
             try:
