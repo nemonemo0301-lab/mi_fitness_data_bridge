@@ -2,7 +2,7 @@
 
 - 作成日: 2026-11-19
 - 作成: Antigravity CLI（plan モード）
-- 担当: Claude Code
+- 担当: Antigravity（Codex 代行レビュー）
 - ステータス: implemented
 
 ## 1. 目的
@@ -135,5 +135,20 @@
 
 ## 8. レビュー・PR（Codex が記入）
 
-- PR: 
-- 指摘・並列タスク: 
+- レビュー日時・担当: 2026-11-20 Antigravity（Codex 利用上限のため代行レビュー）
+- 対象差分: ブランチ `fix/cli-gbk-upstream`（`docs/agent-collab` からの差分：上流 `01a7f1f` の GBK 対応 cherry-pick ＋ `tests/test_cli_security.py` 補強）
+- PR: 作成予定
+- 判定: approve
+- 確認結果（バグ・退行・見落とし・影響範囲）:
+  - **バグ・退行**: `src/mi_fitness_mcp/main.py`（L38–230）のステータスマーカー置換のみで、終了コード・`finally` での `adapter.close()`・`getpass` による非エコー入力・`mask_account_id`・`--db` / `MI_FITNESS_DB_PATH` 解決ロジックに変更・退行なし。`CHANGELOG.md` のコンフリクト解消も書式・内容ともに適切。`tests/test_cli_security.py` L303–304 の補強により、エラー時に `[X]` が出力され `[OK]` が出力されないことが引き続き検証できている。テスト（389 passed）・ruff（All checks passed）確認済み。
+  - **絵文字・非 GBK 文字の見落とし**: `src/mi_fitness_mcp/main.py` 全行および `auth/__init__.py`・`export.py` 等を確認し、CLI 出力に絵文字の残存なし。`cmd_doctor` の設定未作成分岐（L107–109）の `「」→“”` や `serve --read-only` のヘルプ文言を含め、いずれも GBK エンコード可能な文字のみ。
+  - **フォーク独自機能への影響**:
+    - `serve --read-only`（`main.py` L279–283・L325–331、`server.py` の `read_only_serve` / `CLOUD_TOOLS` / `main()`）: 変更箇所と非重複、影響なし。
+    - `passToken` 再読み込み（`adapters/mi_fitness_cloud.py` の `_adopt_stored_token()` L180–192・L379）: 変更なし、`main.py` の `_create_cloud_adapter()` 経由の呼び出しも不変で影響なし。
+    - 心拍・ストレスの 1 日ずつ取得（`adapters/mi_fitness_cloud.py` の `_fetch_key_per_day()` L409–422、`iter_heart_rate` L1348、`iter_stress` L1465）: 変更なし、`cmd_sync_async` からの呼び出し引数も不変で影響なし。
+  - **毎朝の CSV 出力（`export` コマンド）への影響**: `cmd_export`（`main.py` L246–267）および `src/mi_fitness_mcp/export.py`（`utf-8-sig` 出力・数式インジェクション対策・読み取り専用接続・`FORBIDDEN_EXPORT_FIELDS` 除外）は一切未変更で影響なし。
+  - **セキュリティ・ルール適合**: 認証情報・健康データの露出や実アカウント通信はなく、追加・更新テストも合成データとモンキーパッチのみ。
+- 指摘・補足（いずれもブロッカーなし / non-blocking）:
+  - 毎朝の自動実行スクリプト等で `mi-fitness-bridge sync` の標準出力を文字列解析している場合、マーカーが `✅`/`❌`/`⚠️` から `[OK]`/`[X]`/`[WARN]` に変わる点のみ念のため留意すること（終了コード 0/1 および `export` コマンドの出力は不変）。
+  - `tests/test_cli_gbk.py` は上流 `01a7f1f` そのままの取り込みであり、`cmd_doctor` の設定ファイル未作成分岐（L104–110）や非デフォルト DB パス警告分岐（L145–150）、`cmd_setup` の必須入力欠落分岐（L88–90）は明示的には通過しないが、該当行はすべて GBK 互換文字であり上流追従性を優先して追加改変は不要。
+  - 既知のスコープ外事項（本メモ 2.(4) 記載どおり）: 日本語 Windows の strict `cp932` 環境では簡体字メッセージ側で依然 `UnicodeEncodeError` が起きうるため、`PYTHONUTF8=1` での運用を継続する。
