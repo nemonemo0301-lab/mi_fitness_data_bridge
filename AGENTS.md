@@ -52,3 +52,28 @@ python -m ruff check src tests
 ## 升级建议 backlog
 
 （暂无。近期问题已修复；后续发现按全局规则 `github-project-evaluation/docs/agent-collab-rules.md` 收录。）
+
+## 3ツール併用ルール（Antigravity CLI / Claude Code / Codex）
+
+> 2026-11-19 追加。上の既存ルール（認証情報・健康データの扱い、テスト必須など）はどのツールにも同じく適用する。
+
+### 役割分担
+
+| ツール | 担当 | 主な使い方 |
+| --- | --- | --- |
+| Antigravity CLI (`agy`) | リポジトリ全体の広域調査、設計ドキュメント作成（plan モード）、大規模リファクタリング、Google Cloud / Workspace 連携 | `agy --mode plan` で調査・設計し、結果を `docs/plans/` に書き出す |
+| Claude Code (`claude`) | コアロジックの自律実装、テスト駆動デバッグ | `docs/plans/` の設計メモを読んで実装し、`python -m pytest -q -p no:cacheprovider` が通るまで直す |
+| Codex (`codex`) | GitHub PR 単位の実装・レビュー・並列タスク | 1 PR = 1 タスクで切り出し、PR の作成・レビュー・並列作業を担当 |
+
+### バトンパス（引き継ぎ）の流れ
+
+1. **Antigravity**：調査・設計を `docs/plans/YYYY-MM-DD-<slug>.md` に `docs/plans/_template.md` の形式で書く。ステータスは `ready-for-implementation` にする。
+2. **Claude Code**：`ready-for-implementation` の設計メモを読んで実装し、テストを通す。終わったら同じメモの「実装ログ」に結果を書き、ステータスを `implemented` にする。
+3. **Codex**：実装を PR にまとめてレビューする。指摘や分割した並列タスクはメモの「レビュー・PR」に書き、マージ後にステータスを `done` にする。
+
+### 共通の約束
+
+- 引き継ぎは必ず `docs/plans/` のファイル経由で行い、口頭（チャット）だけで済ませない。
+- 1 つのメモを同時に複数ツールで編集しない。担当中のツール名をメモの「担当」に書く。
+- 設計メモにも、認証情報（passToken など）・SQLite・エクスポート・ログ・実際の健康データを貼らない。例は合成データのみ。
+- どのツールも変更後は `python -m pytest -q -p no:cacheprovider` と `python -m ruff check src tests` を実行する。
