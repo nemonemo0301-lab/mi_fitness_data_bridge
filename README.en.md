@@ -101,6 +101,8 @@ Setup asks for a Mi Fitness `user_id`, `passToken`, and region (default: `cn`). 
 
 `doctor` checks local configuration, credentials, and the database. When credentials are configured, it also checks cloud connectivity. A cloud check can fail because of network or upstream-service changes; existing local data and export operations remain usable without a cloud connection.
 
+On Windows, when you pipe or redirect CLI output (or run it from a script that captures output), set `PYTHONUTF8=1` (PowerShell: `$env:PYTHONUTF8 = "1"`) so messages are written as UTF-8; otherwise characters outside the system code page (such as `cp932` or `cp1252`) appear as `\uXXXX` escapes.
+
 `sync`, `export`, `serve`, and `doctor` accept `--db` and support the `MI_FITNESS_DB_PATH` environment variable. Precedence is: command-line option > environment variable > configured/default path.
 
 ## Sync data

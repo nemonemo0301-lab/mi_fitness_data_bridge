@@ -2,6 +2,7 @@
 
 import argparse
 import asyncio
+import codecs
 import getpass
 import sys
 
@@ -266,7 +267,28 @@ def cmd_export(args):
         print(f"Warning: no rows found for selected dataset(s): {', '.join(empty_datasets)}")
 
 
+def _make_console_output_safe(*streams):
+    """Keep strict non-UTF-8 console streams (e.g. cp932, cp1252) from aborting the CLI.
+
+    Characters the stream's encoding cannot represent are written as ``\\uXXXX``
+    escapes instead of raising ``UnicodeEncodeError``. The encoding itself is not
+    changed, so UTF-8 output and representable characters are byte-for-byte identical.
+    """
+    for stream in streams or (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is None or getattr(stream, "errors", None) != "strict":
+            continue
+        try:
+            codec_name = codecs.lookup(stream.encoding or "").name
+        except (LookupError, TypeError):
+            continue
+        if codec_name in ("utf-8", "utf-8-sig"):
+            continue
+        reconfigure(errors="backslashreplace")
+
+
 def main():
+    _make_console_output_safe()
     parser = argparse.ArgumentParser(
         prog=PROGRAM_NAME, description="Local-first Mi Fitness health data bridge"
     )

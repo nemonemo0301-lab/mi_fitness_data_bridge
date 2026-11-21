@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Keep the CLI running when stdout/stderr is a strict non-UTF-8, non-GBK stream (e.g. `cp932` on Japanese Windows or `cp1252` on English Windows when output is piped, redirected or captured by another program). Previously `setup`, `doctor` and `sync` aborted on their first Simplified Chinese line with `UnicodeEncodeError`, so `sync` stored nothing. At startup, such strict streams now switch to `errors="backslashreplace"` (unrepresentable characters become `\uXXXX`); the encoding is unchanged, UTF-8 streams are left untouched and GBK output is byte-for-byte identical. Messages are unchanged. Covered by synthetic strict-stream tests.
+
 - Use ASCII status markers in setup, doctor and sync so strict GBK terminals can display diagnostics without an emoji encoding exception. Synthetic GBK-stream regression checks cover successful, failed and partial operations; this does not establish a fix for upstream login failures.
 
 - Correct body measurements: convert upstream muscle percentage to `muscle_mass_kg` using the same record's weight. Missing, zero-default or invalid percentages remain unavailable without discarding valid weight readings. Reject non-finite weights. Existing cached rows require an explicit date-range body-measurement re-sync after installing this fix; exporting alone does not repair them. Covered by synthetic conversion and repeated-upsert tests (Issue #20).

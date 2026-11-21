@@ -101,6 +101,8 @@ mi-fitness-bridge doctor
 
 `doctor` 会检查本地配置、凭证和数据库；配置了凭证时还会检查云端连通性。云端检查可能因网络或上游服务变动失败，但已有本地数据和导出操作仍可离线使用。
 
+在 Windows 上通过管道或重定向使用命令行输出（或由其他脚本捕获输出）时，建议设置 `PYTHONUTF8=1`（PowerShell：`$env:PYTHONUTF8 = "1"`），让输出使用 UTF-8；否则系统代码页（如 `cp932`、`cp1252`）无法表示的字符会显示为 `\uXXXX`。
+
 `sync`、`export`、`serve` 和 `doctor` 支持 `--db`，也支持 `MI_FITNESS_DB_PATH` 环境变量指定数据库路径，优先级为：命令行参数 > 环境变量 > 配置/默认路径。
 
 ## 同步数据
