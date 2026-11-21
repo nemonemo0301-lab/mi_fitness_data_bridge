@@ -1,7 +1,7 @@
 # PROGRESS
 
 ネモさんのフォーク（`fork` = nemonemo0301-lab/mi_fitness_data_bridge）での作業の流れを、セッションをまたいで引き継ぐためのメモ。
-最終更新: 2026-11-20（Claude Code）
+最終更新: 2026-11-22（Claude Code）
 
 > 認証情報・DB・エクスポート・ログ・実際の健康データはここに書かない。
 
@@ -24,11 +24,12 @@
 - 2026-11-19 ネモさんに「迷っていること」のうち 4 点を確認し、最終ゴールと優先順位を決めた（下の「決まったこと」）。
 - 2026-11-19 CHANGELOG の `[Unreleased]` に、passToken の再読み込み（2486c10）と心拍・ストレスの 1 日ずつ取得（63c7282）の項目を追加した。これでフォークの 3 つの機能がすべて CHANGELOG に載った。テスト 382 件・ruff ともに通過。
 - 2026-11-20 **上流の未マージ修正（CLI の GBK 対応）を取り込み**。設計メモ `docs/plans/2026-11-19-upstream-check.md`（Antigravity 作成）に従い、上流 `01a7f1f`（絵文字のステータスマーカーを `[OK]` / `[X]` / `[WARN]` / `[INFO]` に置換）を `cherry-pick -x`。CHANGELOG のコンフリクトは両方の項目を残して解消し、`tests/test_cli_security.py` の常に真になっていた検証を補強した。メモのステータスは `implemented`。
+- 2026-11-20 `d36c40b` **GBK 対応の PR #1（フォーク内）をレビュー・マージ**。Codex が利用上限のため Antigravity が代行レビューし、判定は approve（ブロッカーなし）。`fix/cli-gbk-upstream` → `docs/agent-collab` にマージ。2026-11-22 にマージ後の `docs/agent-collab` でテスト 389 件・ruff の通過を再確認し、設計メモの PR 欄を更新した。
 
 ブランチの状態：
 - `feat/serve-read-only` … 上の 3 コミット（9f3c4ee〜63c7282）。`fork` に push 済みで、ローカルと一致。
-- `docs/agent-collab` … `feat/serve-read-only` の上にドキュメントのコミットを積んだもの。
-- `fix/cli-gbk-upstream` … `docs/agent-collab` の上に GBK 対応の取り込みを積んだもの（現在の作業ブランチ、未 push）。
+- `docs/agent-collab` … `feat/serve-read-only` の上にドキュメントのコミットを積み、GBK 対応（PR #1）をマージしたもの。毎朝の CSV 出力に使っている。`fork` に push 済み。
+- `fix/cli-gbk-upstream` … PR #1 でマージ済み（`fork` に push 済み）。worktree `~/mi-fitness-bridge-wt-gbk` が残っているが、もう使わないので削除してよい（ネモさんの判断待ち）。
 
 ## 決まったこと（2026-11-19 ネモさんに確認）
 
@@ -39,13 +40,13 @@
 
 ## 今やっていること
 
-- `docs/plans/2026-11-19-upstream-check.md` が `implemented`。次は Codex が PR 化・レビューする番（AGENTS.md のバトンパス 3）。
+- 特になし。GBK 対応の取り込み（`docs/plans/2026-11-19-upstream-check.md`）はレビュー・マージまで終わった。
 
 ## 次にやること（3つまで）
 
-1. `fix/cli-gbk-upstream` の PR 化・レビュー（push 先は `fork` のみ）。Codex は 2026-12-11 18:00 まで利用上限のため、レビューは Antigravity（Gemini 4 Neon）が代行する。なお日本語 Windows の strict `cp932` 出力（パイプ・リダイレクト時）では簡体字メッセージでまだ失敗しうるので、`PYTHONUTF8=1` で運用する（メモ 2.(4)）。
-2. 上流 PR の設計メモを `docs/plans/YYYY-MM-DD-upstream-pr.md` に作る。機能 PR とドキュメント PR を分けるか、1 本にするかもメモで決める（自分用の安定運用が優先なので、急がない）。注意：CHANGELOG の 3 項目は `docs/agent-collab` にしかない。機能 PR を `feat/serve-read-only` から出すなら、CHANGELOG のコミットもそちらに移す必要がある。
-3. 残りの「迷っていること」（フォークの main・パスの食い違い・修正の反映方法・次の機能）をネモさんに確認する。
+1. 上流 PR の設計メモを `docs/plans/YYYY-MM-DD-upstream-pr.md` に作る。機能 PR とドキュメント PR を分けるか、1 本にするかもメモで決める（自分用の安定運用が優先なので、急がない）。注意：CHANGELOG の 3 項目は `docs/agent-collab` にしかない。機能 PR を `feat/serve-read-only` から出すなら、CHANGELOG のコミットもそちらに移す必要がある。
+2. 残りの「迷っていること」（フォークの main・パスの食い違い・修正の反映方法・次の機能）をネモさんに確認する。あわせて、毎朝のスクリプトが `sync` の出力の `✅` などを文字列で見ていないか確認する（GBK 対応でマーカーが `[OK]` / `[X]` / `[WARN]` に変わったため。終了コードと `export` の出力は変わっていない）。
+3. 日本語 Windows の strict `cp932` 出力（パイプ・リダイレクト時）では、簡体字のメッセージでまだ失敗しうる（メモ 2.(4)）。当面は `PYTHONUTF8=1` で運用し、直すかどうかは別の設計メモで決める。
 
 ## 迷っていること・ネモさんに聞きたいこと
 

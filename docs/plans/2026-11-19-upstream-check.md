@@ -137,7 +137,7 @@
 
 - レビュー日時・担当: 2026-11-20 Antigravity（Codex 利用上限のため代行レビュー）
 - 対象差分: ブランチ `fix/cli-gbk-upstream`（`docs/agent-collab` からの差分：上流 `01a7f1f` の GBK 対応 cherry-pick ＋ `tests/test_cli_security.py` 補強）
-- PR: 作成予定
+- PR: nemonemo0301-lab/mi_fitness_data_bridge#1（`fix/cli-gbk-upstream` → `docs/agent-collab`、2026-11-20 マージ済み `d36c40b`）。マージ後の `docs/agent-collab` で 2026-11-22 に再確認: pytest 389 passed / ruff All checks passed。
 - 判定: approve
 - 確認結果（バグ・退行・見落とし・影響範囲）:
   - **バグ・退行**: `src/mi_fitness_mcp/main.py`（L38–230）のステータスマーカー置換のみで、終了コード・`finally` での `adapter.close()`・`getpass` による非エコー入力・`mask_account_id`・`--db` / `MI_FITNESS_DB_PATH` 解決ロジックに変更・退行なし。`CHANGELOG.md` のコンフリクト解消も書式・内容ともに適切。`tests/test_cli_security.py` L303–304 の補強により、エラー時に `[X]` が出力され `[OK]` が出力されないことが引き続き検証できている。テスト（389 passed）・ruff（All checks passed）確認済み。
