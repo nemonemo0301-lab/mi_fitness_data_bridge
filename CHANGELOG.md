@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- Keep the CLI running when stdout/stderr is a strict non-UTF-8, non-GBK stream (e.g. `cp932` on Japanese Windows or `cp1252` on English Windows when output is piped, redirected or captured by another program). Previously `setup`, `doctor` and `sync` aborted on their first Simplified Chinese line with `UnicodeEncodeError`, so `sync` stored nothing. At startup, such strict streams now switch to `errors="backslashreplace"` (unrepresentable characters become `\uXXXX`); the encoding is unchanged, UTF-8 streams are left untouched and GBK output is byte-for-byte identical. Messages are unchanged. Covered by synthetic strict-stream tests.
+
 - Add `serve --read-only`: a cache-only MCP server for a second local client on the same database. It hides and rejects cloud tools (`get_connection_status`, `sync_data`, `cancel_sync`, `get_profile`), creates no cloud adapter (so it never uses or rotates the stored passToken), skips the per-database MCP lock and does not mark the owning server's live jobs as interrupted. Covered by synthetic tests.
 
 - Reload the stored passToken before connecting and before a retry re-login. Each login rotates the passToken and invalidates the previous one, so a long-running MCP server kept the token it loaded at startup and failed after another local process (CLI `sync`, another server) logged in. The adapter now adopts the newest stored token when it belongs to the same account. Tests use synthetic values only and never read the real keyring.

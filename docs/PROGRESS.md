@@ -1,7 +1,7 @@
 # PROGRESS
 
 ネモさんのフォーク（`fork` = nemonemo0301-lab/mi_fitness_data_bridge）での作業の流れを、セッションをまたいで引き継ぐためのメモ。
-最終更新: 2026-11-22（ネモさんの回答を反映）
+最終更新: 2026-11-22（cp932 案 A を `fix/cli-cp932-output` に実装）
 
 > 認証情報・DB・エクスポート・ログ・実際の健康データはここに書かない。
 
@@ -29,11 +29,13 @@
 - 2026-11-22 **cp932 対応の設計メモ** `docs/plans/2026-11-22-cp932-output.md`（draft）を作った。strict `cp932` では `setup` / `doctor` / `sync` のどれも最初の 1 行で落ちる。`sync` は同期を始める前に落ちるので、データが 1 件も同期されない（GBK のテストを一時的に cp932 に変えて確認）。推奨は案 A（変換できない文字だけを `\uXXXX` に置き換えて、止まらないようにする。UTF-8 と GBK では出力が変わらない）。
 - 2026-11-22 ネモさんに、cp932 対応・上流のライセンス条件・PR の分け方・次に欲しいデータを確認し、下の「決まったこと」に記録した。
 - 2026-11-22 毎朝の CSV 出力スクリプト `~/mi-fitness-daily/daily_export.py` を確認した（スクリプトは変更していない）。スクリプト自体は `PYTHONUTF8` を設定していない。`sync` / `export` は `subprocess` で実行し、stdout / stderr は `DEVNULL` に捨てている。CLI の出力を文字列としては見ておらず、終了コードだけを使っている（`✅` などは見ていない）。パスの食い違いについても確認し、`D:\AIWork` のチェックアウトは無いと分かった。
+- 2026-11-22 **cp932 対応の案 A を実装**（作業ブランチ `fix/cli-cp932-output`、worktree `~/mi-fitness-bridge-wt-cp932`）。`main()` の最初で、strict かつ UTF-8 以外の stdout / stderr を `errors="backslashreplace"` にする。strict `cp932`（と `cp1252`）でも `setup` / `doctor` / `sync` が最後まで動き、`sync` の終了コードも変わらない。UTF-8 と GBK では出力は変わらない。テスト `tests/test_cli_cp932.py`、CHANGELOG、README（中国語・英語）に `PYTHONUTF8=1` を勧める一文を追加。設計メモは `implemented`。**フォーク内マージと上流への PR はまだ。** 実装セッションではコマンドの実行が許可されなかったので、pytest / ruff はまだ回していない（マージ前に必ず実行する）。
 
 ブランチの状態：
 - `feat/serve-read-only` … 上の 3 コミット（9f3c4ee〜63c7282）。`fork` に push 済みで、ローカルと一致。
 - `docs/agent-collab` … `feat/serve-read-only` の上にドキュメントのコミットを積み、GBK 対応（PR #1）をマージしたもの。毎朝の CSV 出力に使っている。`fork` に push 済み。
 - `fix/cli-gbk-upstream` … PR #1 でマージ済み（`fork` に push 済み）。worktree `~/mi-fitness-bridge-wt-gbk` が残っているが、もう使わないので削除してよい（ネモさんの判断待ち）。
+- `fix/cli-cp932-output` … `docs/agent-collab` から作成。cp932 案 A の実装。worktree `~/mi-fitness-bridge-wt-cp932`。`docs/agent-collab` へのマージはネモさんの確認待ち。
 
 ## 決まったこと（2026-11-19 ネモさんに確認）
 
@@ -57,11 +59,11 @@
 
 ## 今やっていること
 
-- ネモさんの判断が揃ったので、次は cp932 案 A の実装に進む。
+- cp932 案 A の実装が作業ブランチ `fix/cli-cp932-output` に入った。pytest / ruff を回して通ったら、ネモさんの確認後に `docs/agent-collab` へフォーク内マージする。
 
 ## 次にやること（3つまで）
 
-1. cp932 対応：案 A を実装する（`docs/plans/2026-11-22-cp932-output.md` の 4. に従い、`docs/agent-collab` から作業ブランチを切る）。
+1. cp932 対応：pytest / ruff の通過を確かめたうえで、ネモさんの確認後に `fix/cli-cp932-output` を `docs/agent-collab` にマージする（**ネモさんの確認待ち**。毎朝の CSV 出力が使うブランチなので、確認なしにはマージしない）。
 2. 上流 PR：`docs/plans/2026-11-22-upstream-pr.md` の 4. のとおり、PR 用のブランチを 3 本（passToken の再読み込み、心拍・ストレス、`serve --read-only`）、上流 `main` から作って `fork` に push する（急がない）。
 3. 睡眠スコアの取得方法を調べる。
 
