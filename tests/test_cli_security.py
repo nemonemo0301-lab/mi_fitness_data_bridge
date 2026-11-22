@@ -300,7 +300,8 @@ def test_sync_applies_configured_chunking_timeout_and_error_status(
     assert captured["closed"] is True
     assert timeouts == [7.5]
     assert "status=error" in output
-    assert "\u2705 daily_activity" not in output
+    assert "[X] daily_activity: status=error" in output
+    assert "[OK] daily_activity" not in output
 
 
 def test_doctor_warns_on_non_default_db_path(monkeypatch, tmp_path, capsys):
