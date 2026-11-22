@@ -3,7 +3,7 @@
 - 作成日: 2026-11-22
 - 作成: Claude Code
 - 担当: Claude Code
-- ステータス: draft（ネモさんの判断が必要な点が 3 つある。下の「3.4 決めてほしいこと」）
+- ステータス: implemented（2026-11-22 ネモさんが 3.4 をすべて了承。PR 用ブランチ 5 本を `fork` に push 済み。上流への PR の作成はまだ）
 
 ## 1. 目的
 
@@ -62,9 +62,10 @@ PR を何本に分けるか、どのブランチから出すか、CHANGELOG を�
 2. PR-B：心拍・ストレスを 1 日ずつ取得（`63c7282`）。バグ修正で、データが黙って欠ける問題。
 3. PR-C：`serve --read-only`（`9f3c4ee`）。新機能で、README も変わる。
 4. （任意）PR-D：`tests/test_cli_security.py` の、常に真になる検証の補強（`7f86cce` のテスト部分だけ）。
+4'. PR-E：strict `cp932` / `cp1252` の出力でも CLI が止まらないようにする修正（`docs/plans/2026-11-22-cp932-output.md`。2026-11-22 に追加）。
 5. ドキュメントの PR は、3.3 の判断のあとで決める。
 
-出す順番は A → B → C（バグ修正が先、変更の小さいものが先）。どれも単独で通ることを確かめてあるので、上流がどれかを断っても、ほかには影響しない。
+出す順番は A → B → C（バグ修正が先、変更の小さいものが先）。D と E は独立していて、いつ出してもよい。どれも単独で通ることを確かめてあるので、上流がどれかを断っても、ほかには影響しない。
 
 ### 3.2 ブランチの作り方
 
@@ -80,7 +81,7 @@ PR を何本に分けるか、どのブランチから出すか、CHANGELOG を�
 - 出すなら、汎用的な部分だけにする：`docs/plans/_template.md` と、AGENTS.md の 3 ツール併用ルールから個人の事情を除いたもの。上流の書き方に合わせて英語（または中国語）に訳す。
 - 機能 PR が受け入れられ、上流がこうした進め方に興味を示してからでも遅くない。機能 PR とは混ぜない（上流がレビューしにくくなるため）。
 
-### 3.4 決めてほしいこと（ネモさん）
+### 3.4 決めてほしいこと（ネモさん）→ 2026-11-22 すべて了承（ライセンス条件に同意、ドキュメントは 3.3 のとおり汎用部分だけを訳して後で出す、PR-D も出す）
 
 1. **ライセンスの条件**（2.3）に同意するか。同意しないなら、PR の前に Issue で相談するのが上流の決まり。
 2. **ドキュメント PR**：上の 3.3 のとおり、汎用部分だけにする・訳す・後回しにする、でよいか。それとも、2026-11-19 の決定どおり、まとめて出したいか。
@@ -99,15 +100,16 @@ PR を何本に分けるか、どのブランチから出すか、CHANGELOG を�
 
 ## 4. 実装タスク（Claude Code 向け）
 
-3.4 の 1 にネモさんが同意してから始める。
+3.4 の 1 にネモさんが同意してから始める。→ 2026-11-22 同意済み。
 
-- [ ] `git fetch origin` で上流 `main` の最新を確認し、2.1 の前提（GBK 対応が上流に入っている、競合する作業がない）が変わっていないか見る
-- [ ] PR-A：`origin/main` から `upstream/token-reload` を作り、`cherry-pick -x 2486c10`、CHANGELOG に 1 項目を足す（対象：`src/mi_fitness_mcp/adapters/mi_fitness_cloud.py`、`tests/conftest.py`、`tests/test_token_reload.py`、`CHANGELOG.md`）
-- [ ] PR-B：同じ手順で `upstream/per-day-hr-stress`（`cherry-pick -x 63c7282`。対象：`adapters/mi_fitness_cloud.py`、`tests/test_adapter_time_guard.py`、`tests/test_per_day_fetch.py`、`CHANGELOG.md`）
-- [ ] PR-C：同じ手順で `upstream/serve-read-only`（`cherry-pick -x 9f3c4ee`。CHANGELOG の衝突は、上流の GBK 項目とフォークの項目を両方残して解消する）
-- [ ] （3.4 の 3 で出すと決めた場合）PR-D：`upstream/cli-security-assert`（`7f86cce` のうち `tests/test_cli_security.py` の部分だけ）
-- [ ] 各ブランチで pytest と ruff を通してから `fork` に push する。PR の本文の下書きをこのメモの 8. に書く
-- [ ] PR の作成は、ネモさんが行う（または了承を得てから行う）
+- [x] `git fetch origin` で上流 `main` の最新を確認し、2.1 の前提（GBK 対応が上流に入っている、競合する作業がない）が変わっていないか見る（`6399cd0` のまま）
+- [x] PR-A：`upstream/token-reload`（`cherry-pick 2486c10`、CHANGELOG に 1 項目）
+- [x] PR-B：`upstream/per-day-hr-stress`（`cherry-pick 63c7282`、CHANGELOG に 1 項目）
+- [x] PR-C：`upstream/serve-read-only`（`cherry-pick 9f3c4ee`、CHANGELOG の衝突は上流の GBK 項目とフォークの項目を両方残して解消）
+- [x] PR-D：`upstream/cli-security-assert`（`7f86cce` のうち `tests/test_cli_security.py` の部分だけ）
+- [x] PR-E：`upstream/cli-non-gbk-output`（`c6553f8` からフォーク専用の `docs/PROGRESS.md` と設計メモを除いたもの＋ `d4c3823` のサブプロセスのテスト、CHANGELOG に 1 項目）
+- [x] 各ブランチで pytest と ruff を通してから `fork` に push する。PR の本文の下書きをこのメモの 8. に書く
+- [ ] PR の作成は、ネモさんが行う（8. のリンクから。ライセンス同意のチェックもネモさん本人がする）
 
 ## 5. テスト方針
 
@@ -125,8 +127,132 @@ PR を何本に分けるか、どのブランチから出すか、CHANGELOG を�
 ## 7. 実装ログ（Claude Code が記入）
 
 - 2026-11-22 調査のみ（このメモの作成）。2.2 の確認は、一時的な worktree で行い、作業後に削除した。ブランチの作成と push はまだしていない。
+- 2026-11-22 PR 用ブランチを 5 本作り、`fork` に push した。作業は worktree `~/mi-fitness-bridge-wt-upstream` で行い、毎朝の出力が使う本体の checkout は切り替えていない。基点はすべて上流 `main` の `6399cd0`。どのブランチも 1 コミットだけ。
+
+  | PR | ブランチ | コミット | 変わるファイル | pytest | ruff |
+  | --- | --- | --- | --- | --- | --- |
+  | A | `upstream/token-reload` | `c43e53f` | 4 | 382 passed | 通過 |
+  | B | `upstream/per-day-hr-stress` | `b56b506` | 4 | 382 passed | 通過 |
+  | C | `upstream/serve-read-only` | `d98caa1` | 6 | 383 passed | 通過 |
+  | D | `upstream/cli-security-assert` | `51bddbe` | 1 | 379 passed | 通過 |
+  | E | `upstream/cli-non-gbk-output` | `0392196` | 5 | 408 passed | 通過 |
+
+  - 差分に個人の情報（ネモさん、出力先、`health/nari`、メールアドレス、日本語の作業メモなど）が入っていないことを検索で確かめた。引っかかったのは、テストの合成トークン `synthetic-new` だけ。
 
 ## 8. レビュー・PR（Codex が記入）
 
-- PR: 
+- PR: まだ作っていない。ネモさんが下のリンクから作る（上流のテンプレートが自動で入るので、下書きを貼る。Licensing のチェックはネモさん本人が付ける）。
+  - A: https://github.com/shkyyy18/mi_fitness_data_bridge/compare/main...nemonemo0301-lab:mi_fitness_data_bridge:upstream/token-reload
+  - B: https://github.com/shkyyy18/mi_fitness_data_bridge/compare/main...nemonemo0301-lab:mi_fitness_data_bridge:upstream/per-day-hr-stress
+  - C: https://github.com/shkyyy18/mi_fitness_data_bridge/compare/main...nemonemo0301-lab:mi_fitness_data_bridge:upstream/serve-read-only
+  - D: https://github.com/shkyyy18/mi_fitness_data_bridge/compare/main...nemonemo0301-lab:mi_fitness_data_bridge:upstream/cli-security-assert
+  - E: https://github.com/shkyyy18/mi_fitness_data_bridge/compare/main...nemonemo0301-lab:mi_fitness_data_bridge:upstream/cli-non-gbk-output
 - 指摘・並列タスク: 
+
+### PR 本文の下書き（上流のテンプレートに合わせた英語）
+
+共通の「Data and security」と「Validation」の欄（5 本とも同じ）：
+
+```
+## Validation
+
+- [x] `python -m pytest -q -p no:cacheprovider`
+- [x] `python -m ruff check src tests`
+- [x] Syntax/build checks pass where applicable
+
+## Data and security
+
+- [x] Fixtures and screenshots use synthetic data only
+- [x] No passToken, account ID, database, export, log, or personal health record is included
+- [x] Unofficial Xiaomi status and upstream MIT attribution remain intact
+- [x] This change does not add a hosted credential proxy or coaching/medical behavior
+
+## Licensing
+
+- [ ] I agree to the contribution licensing terms in `CONTRIBUTING.md` (AGPL-3.0-only, plus granting the maintainer the right to offer commercial licenses)
+```
+
+**PR-A** タイトル：`fix: reload the stored passToken before connecting or re-logging in`
+
+```
+## Summary
+
+Each login rotates the passToken and invalidates the previous one. A long-running MCP
+server kept the token it loaded at startup, so it failed after another local process
+(CLI `sync`, a second server) logged in. The cloud adapter now re-reads the stored token
+before connecting and before a retry re-login, and adopts it only when it belongs to the
+same account. Tests use synthetic values and never read the real keyring.
+
+## Compatibility
+
+Mi Fitness cloud adapter (connect / re-login). No schema, export or MCP tool change.
+```
+
+**PR-B** タイトル：`fix: fetch heart rate and stress one day per request`
+
+```
+## Summary
+
+With 1-minute heart-rate measurement, a multi-day request returned only the oldest
+records with no pagination signal, so later days were silently missing after a sync.
+A single-day request returns the full day. `heart_rate` and `stress` are now fetched one
+calendar day per request; other data types are unchanged. Covered by synthetic tests
+with stubbed cloud responses.
+
+## Compatibility
+
+Datasets: heart_rate, stress (sync only). More requests per sync for these two types.
+```
+
+**PR-C** タイトル：`feat: add serve --read-only for a second local MCP client`
+
+```
+## Summary
+
+Adds `serve --read-only`: a cache-only MCP server so a second local client (for example
+another desktop MCP client) can query the same database while the normal server runs.
+It hides and rejects the cloud tools (`get_connection_status`, `sync_data`, `cancel_sync`,
+`get_profile`), creates no cloud adapter (so it never uses or rotates the stored
+passToken), skips the per-database MCP lock, and does not mark the owning server's live
+jobs as interrupted. README / README.en.md document the flag. Synthetic tests only.
+
+## Compatibility
+
+Command: `serve --read-only` (new flag; default `serve` is unchanged). MCP tools: cloud
+tools are not exposed in read-only mode.
+```
+
+**PR-D** タイトル：`test: assert the failure marker in the sync error-status test`
+
+```
+## Summary
+
+After the ASCII status markers change (#22), the assertion that the emoji success
+marker is absent is always true. The test now asserts that the `[X] daily_activity:
+status=error` line is printed and the `[OK]` line is not. Test-only change.
+
+## Compatibility
+
+Tests only.
+```
+
+**PR-E** タイトル：`fix: keep the CLI running on strict non-GBK output streams (cp932, cp1252)`
+
+```
+## Summary
+
+Follow-up to #22. When output is piped, redirected or captured on Windows, Python uses
+the ANSI code page. cp932 (Japanese Windows) and cp1252 (English Windows) cannot encode
+most simplified Chinese characters, so `setup`, `doctor` and `sync` raised
+`UnicodeEncodeError` on their first line, and `sync` exited before syncing anything.
+At CLI start, strict non-UTF-8 stdout/stderr streams now switch to
+`errors="backslashreplace"`. The encoding and the messages are unchanged; UTF-8 and GBK
+output is byte-identical, and MCP `serve` stdio is unaffected. README / README.en.md
+recommend `PYTHONUTF8=1` for piped output on Windows. Covered by synthetic strict-stream
+tests and a `sync --help` subprocess check with `PYTHONIOENCODING=cp932`.
+
+## Compatibility
+
+Commands: setup, doctor, sync, --help on Windows with redirected/piped output.
+No change on UTF-8 or GBK terminals.
+```

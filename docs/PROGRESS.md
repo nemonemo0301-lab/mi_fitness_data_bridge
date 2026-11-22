@@ -1,7 +1,7 @@
 # PROGRESS
 
 ネモさんのフォーク（`fork` = nemonemo0301-lab/mi_fitness_data_bridge）での作業の流れを、セッションをまたいで引き継ぐためのメモ。
-最終更新: 2026-11-22（cp932 案 A を `fix/cli-cp932-output` に実装）
+最終更新: 2026-11-22（Claude Code）
 
 > 認証情報・DB・エクスポート・ログ・実際の健康データはここに書かない。
 
@@ -30,12 +30,17 @@
 - 2026-11-22 ネモさんに、cp932 対応・上流のライセンス条件・PR の分け方・次に欲しいデータを確認し、下の「決まったこと」に記録した。
 - 2026-11-22 毎朝の CSV 出力スクリプト `~/mi-fitness-daily/daily_export.py` を確認した（スクリプトは変更していない）。スクリプト自体は `PYTHONUTF8` を設定していない。`sync` / `export` は `subprocess` で実行し、stdout / stderr は `DEVNULL` に捨てている。CLI の出力を文字列としては見ておらず、終了コードだけを使っている（`✅` などは見ていない）。パスの食い違いについても確認し、`D:\AIWork` のチェックアウトは無いと分かった。
 - 2026-11-22 **cp932 対応の案 A を実装**（作業ブランチ `fix/cli-cp932-output`、worktree `~/mi-fitness-bridge-wt-cp932`）。`main()` の最初で、strict かつ UTF-8 以外の stdout / stderr を `errors="backslashreplace"` にする。strict `cp932`（と `cp1252`）でも `setup` / `doctor` / `sync` が最後まで動き、`sync` の終了コードも変わらない。UTF-8 と GBK では出力は変わらない。テスト `tests/test_cli_cp932.py`、CHANGELOG、README（中国語・英語）に `PYTHONUTF8=1` を勧める一文を追加。設計メモは `implemented`。**フォーク内マージと上流への PR はまだ。** worktree で本体の .venv の python に PYTHONPATH=src を付けて実行し、pytest 417 件・ruff ともに通過した。
+- 2026-11-22 cp932 対応が、別々のセッションで 2 回実装された（`fix/cli-cp932-output` と、Claude Code の `fix/cli-non-gbk-output`）。ネモさんの判断で `fix/cli-cp932-output` を残し、Claude Code のほうからは、サブプロセスで `PYTHONIOENCODING=cp932` を付けて `sync --help` を動かすテストだけを移した（`d4c3823`）。`fix/cli-non-gbk-output` は削除した。
+- 2026-11-22 `fix/cli-cp932-output` は 08:18 に `docs/agent-collab` へ fast-forward でマージされていた（Claude Code の操作ではない。本体の checkout の reflog で確認）。そのあと Claude Code が `d4c3823`（テストとメモだけ）まで fast-forward した。`docs/agent-collab` で pytest 418 件・ruff 通過。
+- 2026-11-22 **上流 PR 用のブランチを 5 本作って `fork` に push した**（`docs/plans/2026-11-22-upstream-pr.md`、ステータス `implemented`）。A `upstream/token-reload`、B `upstream/per-day-hr-stress`、C `upstream/serve-read-only`、D `upstream/cli-security-assert`、E `upstream/cli-non-gbk-output`。どれも上流 `main`（`6399cd0`）から 1 コミットで、単独で pytest と ruff が通る。PR の本文の下書きと、PR を作るリンクはメモの 8. にある。**上流への PR はまだ作っていない。**
 
 ブランチの状態：
 - `feat/serve-read-only` … 上の 3 コミット（9f3c4ee〜63c7282）。`fork` に push 済みで、ローカルと一致。
 - `docs/agent-collab` … `feat/serve-read-only` の上にドキュメントのコミットを積み、GBK 対応（PR #1）をマージしたもの。毎朝の CSV 出力に使っている。`fork` に push 済み。
 - `fix/cli-gbk-upstream` … PR #1 でマージ済み（`fork` に push 済み）。worktree `~/mi-fitness-bridge-wt-gbk` が残っているが、もう使わないので削除してよい（ネモさんの判断待ち）。
-- `fix/cli-cp932-output` … `docs/agent-collab` から作成。cp932 案 A の実装。worktree `~/mi-fitness-bridge-wt-cp932`。`docs/agent-collab` へのマージはネモさんの確認待ち。
+- `fix/cli-cp932-output` … cp932 案 A の実装。`docs/agent-collab` にマージ済み（`d4c3823` まで）。worktree `~/mi-fitness-bridge-wt-cp932` が残っている。
+- `upstream/*`（5 本）… 上流 PR 用。上流 `main` が基点。`fork` に push 済み。worktree `~/mi-fitness-bridge-wt-upstream`。
+- 注意：本体の checkout `~/mi-fitness-bridge` は毎朝の CSV 出力が editable install で使っている。ブランチを切り替えると毎朝動くコードも変わるので、`docs/agent-collab` のままにし、ほかのブランチの作業は worktree で行う。
 
 ## 決まったこと（2026-11-19 ネモさんに確認）
 
@@ -50,6 +55,9 @@
 - **上流のライセンス条件**：上流（shkyyy18）の `CONTRIBUTING.md` にある条件（AGPL-3.0-only に加えて、メンテナーに商用を含む再ライセンス権を与える）に同意する。
 - **PR の分け方**：機能はテーマごとに 3 本の PR に分ける（passToken の再読み込み → 心拍・ストレス → `serve --read-only` の順）。ドキュメントは別に出す。
 - **次に欲しいデータ**：睡眠スコア。
+- **テスト補強の PR（PR-D）**：出す。
+- **ドキュメント PR**：PROGRESS.md・CLAUDE.md・フォークの設計メモは出さない。汎用的な部分（`docs/plans/_template.md` と 3 ツール併用ルール）だけを、個人の事情を除いて英語（または中国語）に訳し、機能 PR のあとで出す。
+- cp932 対応は、別セッションの `fix/cli-cp932-output` を残す。
 
 調べて分かったこと（2026-11-22）：
 
@@ -59,16 +67,16 @@
 
 ## 今やっていること
 
-- cp932 案 A の実装が作業ブランチ `fix/cli-cp932-output` に入り、pytest 417 件・ruff が通過した。ネモさんの確認後に `docs/agent-collab` へフォーク内マージする。
+- 上流 PR 用のブランチ 5 本が `fork` にある。PR はネモさんが作る（上流 PR メモの 8. のリンクから。ライセンス同意のチェックもネモさん本人が付ける）。
 
 ## 次にやること（3つまで）
 
-1. cp932 対応：ネモさんの確認後に `fix/cli-cp932-output` を `docs/agent-collab` にマージする（**ネモさんの確認待ち**。毎朝の CSV 出力が使うブランチなので、確認なしにはマージしない）。テスト 417 件・ruff は通過済み。
-2. 上流 PR：`docs/plans/2026-11-22-upstream-pr.md` の 4. のとおり、PR 用のブランチを 3 本（passToken の再読み込み、心拍・ストレス、`serve --read-only`）、上流 `main` から作って `fork` に push する（急がない）。
-3. 睡眠スコアの取得方法を調べる。
+1. 上流 PR を作る（**ネモさん**）。順番は A → B → C。D と E はいつでもよい。本文は上流 PR メモの 8. の下書きを貼る。作ったら PR 番号をメモの 8. に書く。
+2. 睡眠スコアの取得方法を調べる（`docs/issue-14-sleep-score-investigation.md` が手がかり）。設計メモを `docs/plans/` に作る。
+3. ドキュメント PR の準備：`docs/plans/_template.md` と 3 ツール併用ルールから個人の事情を除き、英語に訳す（機能 PR のあとでよい）。
 
 ## 迷っていること・ネモさんに聞きたいこと
 
-- **テスト補強の PR（PR-D）**：上流 PR メモでは、テスト補強の小さな PR（PR-D）も出す案がある。出すかどうかは、まだ決まっていない。
-- **ドキュメント PR の出し方**：PROGRESS.md と CLAUDE.md はフォーク個人の内容（出力先、`health/nari`、push のルールなど）が多く、AGENTS.md の追記も日本語です（上流は中国語・英語）。汎用的な部分（テンプレートと 3 ツール併用ルール）だけを訳して後で出す、でよいかは、まだ決まっていない。
+- **残っている worktree**：`~/mi-fitness-bridge-wt-gbk`（マージ済み）と `~/mi-fitness-bridge-wt-cp932`（マージ済み）は、消してよいですか。`~/mi-fitness-bridge-wt-upstream` は上流 PR が終わるまで残します。
+- **並行して動くセッション**：2026-11-22 に、cp932 対応を 2 つのセッションが同時に実装し、`docs/agent-collab` へのマージも別のセッションが行った。同じタスクを複数のツールで同時に始めないように、着手する前に `git fetch fork` で既存のブランチを確かめる。
 - **フォークの main**：フォーク側の `main` を、今後どのブランチの内容に合わせていくか（ずっと作業ブランチのまま運用するのか）。
