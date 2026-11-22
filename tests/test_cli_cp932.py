@@ -3,7 +3,11 @@
 Only synthetic values and monkeypatches are used; no cloud or keyring I/O.
 """
 import io
+import os
+import subprocess
+import sys
 from contextlib import redirect_stdout
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -11,6 +15,7 @@ import pytest
 from mi_fitness_mcp import main as cli
 from mi_fitness_mcp.config import Config
 
+SRC_DIR = Path(__file__).resolve().parents[1] / "src"
 NON_GBK_ENCODINGS = ["cp932", "cp1252"]
 SAMPLE_TEXT = "[OK] 配置向导 诊断 同步完成 status=ok\n"
 
@@ -242,3 +247,26 @@ def test_main_applies_helper_before_parsing(monkeypatch):
         cli.main()
     assert exc.value.code == 0
     assert seen == [()]
+
+
+def test_help_exits_cleanly_with_cp932_stdio_in_subprocess():
+    """End-to-end through the real ``main()`` with a cp932 stdout; ``--help`` needs no I/O."""
+    env = {
+        key: value
+        for key, value in os.environ.items()
+        if key not in {"PYTHONUTF8", "PYTHONIOENCODING", "PYTHONPATH"}
+    }
+    env.update(PYTHONIOENCODING="cp932", PYTHONUTF8="0", PYTHONPATH=str(SRC_DIR))
+    result = subprocess.run(
+        [sys.executable, "-c", "from mi_fitness_mcp.main import main; main()", "sync", "--help"],
+        capture_output=True,
+        env=env,
+        timeout=60,
+        check=False,
+    )
+    stderr = result.stderr.decode("cp932", errors="replace")
+    assert result.returncode == 0, stderr
+    assert "UnicodeEncodeError" not in stderr
+    stdout = result.stdout.decode("cp932")
+    assert "--start-date" in stdout
+    assert "\\u" in stdout
